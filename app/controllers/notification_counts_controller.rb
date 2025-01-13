@@ -32,12 +32,12 @@ class SallaCommunity::NotificationCountsController < ::ApplicationController
     return render json: { error: 'User not found' }, status: :not_found unless user
 
     counts = {
-      all: user.user_actions.where(action_type: [5,4]).count,
-      topics: user.topics.count,
-      posts: user.user_actions.where(action_type: 5).count,
+      all: user.user_actions.where(action_type: [5,4]).select { |a| a.target_topic.closed == false && a.target_topic.deleted_at.nil? }.count,
+      topics: user.topics.select { |t| t.closed == false && t.deleted_at.nil? }.count,
+      posts: user.user_actions.where(action_type: 5).select { |a| a.target_topic.closed == false && a.target_topic.deleted_at.nil? }.count,
       likes: DiscourseReactions::ReactionUser.where(user_id: user.id).count,
-      answers: user.topics.select {  |t| t.custom_fields[::DiscourseSolved::ACCEPTED_ANSWER_POST_ID_CUSTOM_FIELD].present? }.count,
-      bookmarks: user.bookmarks.count
+      answers: user.topics.select {  |t| t.closed == false && t.deleted_at.nil? && t.custom_fields[::DiscourseSolved::ACCEPTED_ANSWER_POST_ID_CUSTOM_FIELD].present? }.count,
+      bookmarks: user.bookmarks.where(bookmarkable_type: "Topic").select { |t| t.bookmarkable.closed == false && t.bookmarkable.deleted_at.nil? }.count
     }
 
     render json: {
