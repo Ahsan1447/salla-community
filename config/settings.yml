@@ -1,0 +1,4 @@
+plugins:
+  enable_notification_counts:
+    default: true
+    client: true
