@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-class NotificationCounts::NotificationCountsController < ::ApplicationController
-  requires_plugin NotificationCounts::PLUGIN_NAME
+class SallaCommunity::NotificationCountsController < ::ApplicationController
+  requires_plugin SallaCommunity::PLUGIN_NAME
 
   def count
     user_id = params[:user_id]
@@ -13,7 +13,7 @@ class NotificationCounts::NotificationCountsController < ::ApplicationController
     }
 
     notifications = Notification
-                      .where(user_id: user_id, read: false, notification_type: notification_types.values)
+                      .where(user_id: user_id, notification_type: notification_types.values)
                       .group(:notification_type)
                       .count
     notification_counts = notification_types.transform_values { |type| notifications[type] || 0 }
@@ -32,15 +32,16 @@ class NotificationCounts::NotificationCountsController < ::ApplicationController
     return render json: { error: 'User not found' }, status: :not_found unless user
 
     counts = {
+      all: user.user_actions.where(action_type: [5,4]).count,
       topics: user.topics.count,
-      posts: user.posts.count,
-      likes: user.topics.sum(:like_count) + user.posts.sum(:like_count),
-      answers: user.topics.where(has_answered: true).count,
+      posts: user.user_actions.where(action_type: 5).count,
+      likes: DiscourseReactions::ReactionUser.where(user_id: user.id).count,
+      answers: user.topics.select {  |t| t.custom_fields[::DiscourseSolved::ACCEPTED_ANSWER_POST_ID_CUSTOM_FIELD].present? }.count,
       bookmarks: user.bookmarks.count
     }
 
     render json: {
-      all: counts[:topics] + counts[:posts],
+      all: counts[:all],
       topics: counts[:topics],
       posts: counts[:posts],
       likes: counts[:likes],

@@ -1,4 +1,4 @@
 plugins:
-  enable_notification_counts:
+  enable_salla_community:
     default: true
     client: true
